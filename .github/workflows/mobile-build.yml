@@ -1,0 +1,297 @@
+# GitHub Actions workflow for Mobile (Android & iOS) Builds
+
+name: Mobile CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Environment variables available to all jobs and steps
+env:
+  # Secrets to be configured in GitHub repository settings
+  # ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }} # Base64 encoded keystore file
+  # ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  # ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+  # ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  # GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }} # Google Play service account JSON
+
+  # IOS_FASTLANE_USER: ${{ secrets.IOS_FASTLANE_USER }} # Apple ID
+  # IOS_FASTLANE_PASSWORD: ${{ secrets.IOS_FASTLANE_PASSWORD }} # App-specific password for Fastlane
+  # IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }} # Base64 encoded provisioning profile
+  # IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }} # Base64 encoded .p12 certificate
+  # IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }} # Password for the .p12 certificate
+  # APP_STORE_CONNECT_API_KEY_JSON: ${{ secrets.APP_STORE_CONNECT_API_KEY_JSON }} # App Store Connect API Key JSON
+
+jobs:
+  #
+  # --- General Guidance ---
+  # This workflow provides a template for Android and iOS CI/CD.
+  # You will need to:
+  # 1. Customize Placeholder Steps: Replace all lines marked with "Placeholder:"
+  #    with your project's specific commands for dependency installation,
+  #    linting, testing, building, signing, and deployment.
+  # 2. Verify Project Structure: This workflow assumes standard project layouts
+  #    (e.g., an 'android' folder for the Android project, 'ios' for iOS).
+  #    Adjust paths in the steps if your structure differs.
+  # 3. Configure Secrets: Ensure all GitHub Actions secrets referenced in the
+  #    `env` block (workflow level) and within individual steps (e.g.,
+  #    `secrets.ANDROID_KEYSTORE_BASE64`, `secrets.GOOGLE_PLAY_JSON_KEY`,
+  #    `secrets.IOS_CERTIFICATE_BASE64`, etc.) are created in your
+  #    repository's Settings > Secrets and Variables > Actions.
+  # 4. Review Tool Choices: Tools like Fastlane are recommended but are optional.
+  #    You may need to install them (e.g., via Gemfile for Fastlane) or
+  #    replace those steps with your preferred tooling.
+  #
+
+  build_android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Android dependencies
+        run: |
+          echo "Placeholder: Navigate to your Android project directory if necessary, e.g., cd android"
+          echo "Placeholder: Install Android project dependencies (e.g., npm install or yarn install if using React Native, or ./gradlew dependencies)"
+          # Example:
+          # if [ -f android/gradlew ]; then
+          #   cd android && ./gradlew dependencies
+          # else
+          #   echo "Android project/gradlew not found. Update this step."
+          # fi
+
+      - name: Run Android linters/tests
+        run: |
+          echo "Placeholder: Navigate to your Android project directory if necessary."
+          echo "Placeholder: Run Android linters/tests (e.g., ./gradlew lint test)"
+          # Example:
+          # if [ -f android/gradlew ]; then
+          #   cd android && ./gradlew lint testDebugUnitTest
+          # else
+          #   echo "Android project/gradlew not found. Update this step."
+          # fi
+
+      - name: Build Android App
+        run: |
+          echo "Placeholder: Navigate to your Android project directory if necessary."
+          echo "Placeholder: Build Android app (e.g., ./gradlew assembleRelease or bundleRelease)"
+          echo "Ensure your gradle.properties or build.gradle handles signing configuration using environment variables for release builds."
+          # Example:
+          # if [ -f android/gradlew ]; then
+          #   cd android && ./gradlew assembleRelease
+          # else
+          #   echo "Android project/gradlew not found. Update this step."
+          # fi
+        # Note: Actual signing should be configured within the Gradle build process,
+        # using environment variables for keystore path, alias, and passwords.
+        # These environment variables (ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD)
+        # should be set using the secrets defined at the workflow level.
+
+      - name: Upload Android Artifact (APK/AAB)
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-build
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk 
+            # Adjust path to your APK, or include AAB:
+            # android/app/build/outputs/bundle/release/app-release.aab
+            # Add build logs if desired:
+            # android/build/reports/*
+          if-no-files-found: warn # 'error' or 'ignore'
+
+      - name: Set up Keystore for Signing (if not handled by Gradle directly)
+        # This step is an example if you need to manually place the keystore.
+        # Ideally, your Gradle build is configured to use environment variables for signing.
+        run: |
+          echo "Placeholder: This step shows how to decode a keystore from secrets."
+          echo "Ensure the ANDROID_KEYSTORE_BASE64 secret is set in GitHub repo secrets."
+          echo "Update 'android/app/my-release-key.keystore' to your project's keystore path and name."
+          # if [ -n "${{ env.ANDROID_KEYSTORE_BASE64 }}" ]; then
+          #   mkdir -p android/app # Ensure directory exists
+          #   echo $ANDROID_KEYSTORE_BASE64 | base64 --decode > android/app/my-release-key.keystore
+          #   echo "Keystore decoded to android/app/my-release-key.keystore"
+          # else
+          #   echo "ANDROID_KEYSTORE_BASE64 secret not set. Skipping keystore decoding."
+          #   echo "Ensure your build.gradle is configured to sign the app."
+          # fi
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }} # Make sure this secret is available to this step
+
+      - name: Upload to Google Play Store (Beta)
+        run: |
+          echo "Placeholder: Upload to Google Play Beta using Fastlane supply, GitHub Actions for Google Play, or similar."
+          echo "This step requires the GOOGLE_PLAY_JSON_KEY secret to be configured."
+          echo "Example using Fastlane (ensure Fastlane is installed and configured):"
+          # cd android && bundle install # If using Gemfile for Fastlane
+          # cd android && fastlane supply --aab path/to/your/app.aab --track beta --json_key_data "${{ env.GOOGLE_PLAY_JSON_KEY }}"
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }} # Make sure this secret is available
+
+      # - name: Notify on Android Build Status
+      #   if: always() # Ensures this step runs even if previous steps fail
+      #   uses: rtCamp/action-slack-notify@v2 # Example Slack notification
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }} # User needs to set this secret
+      #     SLACK_USERNAME: GitHub Actions CI
+      #     SLACK_ICON_EMOJI: ":robot_face:"
+      #     SLACK_COLOR: ${{ job.status }} # 'success' or 'failure'
+      #     SLACK_MESSAGE: "Android build finished with status: ${{ job.status }}. See details: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here>"
+
+  # iOS job will be defined next
+
+  build_ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: build_android # Optional: run sequentially or in parallel by removing/keeping 'needs'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Ruby and Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.7' # Or a version compatible with your Fastlane setup
+          bundler-cache: true # Automatically runs bundle install
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Uncomment if Fastlane is not in Gemfile or you need a specific version
+      # - name: Install Fastlane
+      #   run: gem install fastlane -NV
+
+      - name: Install iOS dependencies
+        run: |
+          echo "Placeholder: Navigate to your iOS project directory if necessary, e.g., cd ios"
+          echo "Placeholder: Install iOS dependencies (e.g., pod install, bundle exec pod install)"
+          # Example:
+          # if [ -f ios/Podfile ]; then
+          #   cd ios && bundle exec pod install
+          # elif [ -f Podfile ]; then
+          #   bundle exec pod install
+          # else
+          #   echo "iOS project/Podfile not found. Update this step."
+          # fi
+
+      - name: Set up iOS Code Signing
+        # This step is crucial and often complex. Fastlane 'match' is highly recommended.
+        # Ensure the following secrets are set in GitHub:
+        # IOS_CERTIFICATE_BASE64: Base64 encoded .p12 certificate
+        # IOS_CERTIFICATE_PASSWORD: Password for the .p12 certificate
+        # IOS_PROVISIONING_PROFILE_BASE64: Base64 encoded .mobileprovision file
+        # APP_STORE_CONNECT_API_KEY_JSON: JSON key for App Store Connect API (used by Fastlane)
+        run: |
+          echo "Placeholder: iOS Code Signing - Highly recommend using Fastlane Match."
+          echo "This section demonstrates manual setup if not using Fastlane Match."
+          echo "Ensure relevant secrets (IOS_CERTIFICATE_BASE64, IOS_PROVISIONING_PROFILE_BASE64, IOS_CERTIFICATE_PASSWORD) are set."
+
+          # Example of decoding and importing certificate (manual approach):
+          # if [ -n "${{ secrets.IOS_CERTIFICATE_BASE64 }}" ] && [ -n "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" ]; then
+          #   echo "${{ secrets.IOS_CERTIFICATE_BASE64 }}" | base64 --decode > cert.p12
+          #   security create-keychain -p tempci build.keychain
+          #   security default-keychain -s build.keychain
+          #   security unlock-keychain -p tempci build.keychain
+          #   security import cert.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" -A
+          #   security set-key-partition-list -S apple-tool:,apple: -s -k tempci build.keychain
+          #   rm cert.p12 # Clean up
+          #   echo "Certificate imported."
+          # else
+          #   echo "Certificate secrets not fully set. Skipping manual import."
+          # fi
+
+          # Example of decoding and installing provisioning profile (manual approach):
+          # if [ -n "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" ]; then
+          #   echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+          #   mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          #   cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          #   rm profile.mobileprovision # Clean up
+          #   echo "Provisioning profile installed."
+          # else
+          #   echo "Provisioning profile secret not set. Skipping manual installation."
+          # fi
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+
+      - name: Run iOS linters/tests
+        run: |
+          echo "Placeholder: Navigate to your iOS project directory if necessary."
+          echo "Placeholder: Run iOS linters/tests (e.g., bundle exec fastlane scan or xcodebuild test ...)"
+          # Example:
+          # if [ -f ios/Fastfile ]; then # Assuming Fastfile is in 'ios' subdirectory
+          #   cd ios && bundle exec fastlane scan
+          # else
+          #  echo "iOS Fastfile not found or tests not configured. Update this step."
+          # fi
+
+      - name: Build iOS App (Archive)
+        run: |
+          echo "Placeholder: Navigate to your iOS project directory if necessary."
+          echo "Placeholder: Build iOS app using Fastlane gym or xcodebuild archive."
+          echo "Ensure your project is configured for correct signing identity and provisioning."
+          # Example using Fastlane:
+          # if [ -f ios/Fastfile ]; then # Assuming Fastfile is in 'ios' subdirectory
+          #   cd ios && bundle exec fastlane gym --scheme YourAppScheme --export_method app-store
+          # else
+          #   echo "iOS Fastfile not found or build not configured. Update this step."
+          # fi
+        env:
+          # Pass Fastlane environment variables if needed, e.g., for match password
+          FASTLANE_USER: ${{ secrets.IOS_FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.IOS_FASTLANE_PASSWORD }}
+          # For App Store Connect API Key
+          APP_STORE_CONNECT_API_KEY_JSON: ${{ secrets.APP_STORE_CONNECT_API_KEY_JSON }}
+
+      - name: Upload iOS Artifact (IPA)
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build
+          path: |
+            output/YourApp.ipa 
+            # Adjust path to your IPA file (e.g., from Fastlane gym output path)
+            # Add build logs if desired:
+            # ~/Library/Logs/gym/*
+          if-no-files-found: warn # 'error' or 'ignore'
+
+      - name: Upload to TestFlight
+        run: |
+          echo "Placeholder: Upload to TestFlight using Fastlane pilot."
+          echo "Requires Fastlane setup and necessary secrets/credentials for App Store Connect."
+          # Example using Fastlane:
+          # if [ -f ios/Fastfile ]; then # Assuming Fastfile is in 'ios' subdirectory
+          #   cd ios && bundle exec fastlane pilot upload --api_key_path api_key.json # (You'd generate api_key.json from APP_STORE_CONNECT_API_KEY_JSON)
+          # else
+          #   echo "iOS Fastfile not found or TestFlight upload not configured. Update this step."
+          # fi
+        env:
+          FASTLANE_USER: ${{ secrets.IOS_FASTLANE_USER }} # Apple ID
+          FASTLANE_PASSWORD: ${{ secrets.IOS_FASTLANE_PASSWORD }} # App-specific password
+          # APP_STORE_CONNECT_API_KEY_JSON is often used by Fastlane to generate a temporary API key file
+          APP_STORE_CONNECT_API_KEY_JSON: ${{ secrets.APP_STORE_CONNECT_API_KEY_JSON }}
+
+      # - name: Notify on iOS Build Status
+      #   if: always() # Ensures this step runs even if previous steps fail
+      #   uses: rtCamp/action-slack-notify@v2 # Example Slack notification
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }} # User needs to set this secret
+      #     SLACK_USERNAME: GitHub Actions CI
+      #     SLACK_ICON_EMOJI: ":robot_face:"
+      #     SLACK_COLOR: ${{ job.status }} # 'success' or 'failure'
+      #     SLACK_MESSAGE: "iOS build finished with status: ${{ job.status }}. See details: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here>"
